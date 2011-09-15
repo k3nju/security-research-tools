@@ -41,14 +41,14 @@ def get_callret_pairs( fd, libcall_only ):
 		if items[2].find( "ds:" ) == -1 and libcall_only == True:
 			continue;
 		call_addr = int( items[0], 16 );
-		call_asm = " ".join( items[2:] );
+		call_asm = " ".join( items[1:] );
 		
 		line = fd.readline();
 		if len( line ) == 0:
 			break;
 		items = split_line( line );
 		ret_addr = int( items[0], 16 );
-		ret_asm = " ".join( items[2:] );
+		ret_asm = " ".join( items[1:] );
 		
 		callret_pairs.append( ( call_addr, call_asm, ret_addr, ret_asm ) );
 	return callret_pairs;
