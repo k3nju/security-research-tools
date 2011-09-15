@@ -1,7 +1,55 @@
 from immlib import *;
 import json;
+import traceback as backtrace;
 
-class CallHook
+class CallRetsHook( LogBpHook ):
+	def __init__( self, handler ):
+		LogBpHook.__init__( self );
+		self.__handler = handler;
+		
+	def run( self, regs ):
+		try:
+			imm = Debugger();
+			thread_id = imm.getThreadId();
+			eip = regs[ "EIP" ];
+			self.__handler.on_hit( thread_id, eip );
+		except StandardError as E:
+			imm.log( E.message );
+
+class CallStackManager( object ):
+	def __init__( self ):
+		self.__call_stacks = {};
+		self.__call_points = {};
+		self.__ret_points = {};
+	
+	def add_call_point( self, addr, asm ):
+		self.__call_points[ addr ] = asm;
+	
+	def add_ret_point( self, addr, asm ):
+		self.__ret_points[ addr ] = asm;
+	
+	"""
+	def __on_point( self, tid, eip, stacks, points ):
+		if tid not in stacks:
+			stacks[ tid ] = ( 0, [] );
+		asm = points[ eip ];
+		nest_count = stacks[ tid ][ 0 ] + 1;
+		paragrahp = " " * nest_count;
+		stacks[ tid ][0] = nest_count;
+		stacks[ tid ][1].append( paragraph + asm );
+	"""
+	
+	def __on_call_point( self, tid, eip ):
+		imm = Debugger();
+		imm.log( "call: %x:%x" % ( tid, eip ), address = eip );
+	
+	def __on_ret_point( self, tid, eip ):
+		imm = Debugger();
+		imm.log( "ret: %x:%x" % ( tid, eip ), address = eip );
+	
+	def on_hit( self, tid, eip ):
+		imm = Debugger();
+		imm.log( "%x:%x" % ( tid, eip ) );
 
 def get_module_base_addr( imm, mod_name ):
 	mod = None;
@@ -43,11 +91,15 @@ def main_impl( imm, mod_name, callmap_file ):
 	diff = get_imagebase_diff( loaded_imagebase, callmap[ "imagebase" ] );
 	
 	# map break points
+	manager = CallStackManager();
+	callHook = CallRetsHook( manager );
+	retHook = CallRetsHook( manager );
 	for ( call_addr, call_asm, ret_addr, ret_asm ) in callmap[ "callrets" ]:
 		call_addr += diff;
 		ret_addr += diff;
-		imm.log( call_asm, address = call_addr );
-		imm.log( ret_asm, address = ret_addr );
+		imm.log( repr( call_addr ) );
+		callHook.add( call_asm, call_addr );
+		retHook.add( ret_asm, ret_addr );
 	
 	return "SUCCESS";
 
@@ -62,5 +114,7 @@ def main( args ):
 	try:
 		return main_impl( imm, mod_name, callmap_file );
 	except Exception as E:
+		for line in backtrace.format_exc().split( "\n" ):
+			imm.log( line );
 		return "Error: %s" % E.message;
 
