@@ -2,54 +2,28 @@ from immlib import *;
 import json;
 import traceback as backtrace;
 
-class CallRetsHook( LogBpHook ):
-	def __init__( self, handler ):
-		LogBpHook.__init__( self );
-		self.__handler = handler;
-		
-	def run( self, regs ):
-		try:
-			imm = Debugger();
-			thread_id = imm.getThreadId();
-			eip = regs[ "EIP" ];
-			self.__handler.on_hit( thread_id, eip );
-		except StandardError as E:
-			imm.log( E.message );
-
-class CallStackManager( object ):
+class CallRetHook( LogBpHook ):
 	def __init__( self ):
-		self.__call_stacks = {};
+		LogBpHook.__init__( self );
 		self.__call_points = {};
 		self.__ret_points = {};
 	
 	def add_call_point( self, addr, asm ):
 		self.__call_points[ addr ] = asm;
+		self.add( asm, addr );
 	
 	def add_ret_point( self, addr, asm ):
 		self.__ret_points[ addr ] = asm;
-	
-	"""
-	def __on_point( self, tid, eip, stacks, points ):
-		if tid not in stacks:
-			stacks[ tid ] = ( 0, [] );
-		asm = points[ eip ];
-		nest_count = stacks[ tid ][ 0 ] + 1;
-		paragrahp = " " * nest_count;
-		stacks[ tid ][0] = nest_count;
-		stacks[ tid ][1].append( paragraph + asm );
-	"""
-	
-	def __on_call_point( self, tid, eip ):
-		imm = Debugger();
-		imm.log( "call: %x:%x" % ( tid, eip ), address = eip );
-	
-	def __on_ret_point( self, tid, eip ):
-		imm = Debugger();
-		imm.log( "ret: %x:%x" % ( tid, eip ), address = eip );
-	
-	def on_hit( self, tid, eip ):
-		imm = Debugger();
-		imm.log( "%x:%x" % ( tid, eip ) );
+		#self.add( asm, addr );
+
+	def run( self, regs ):
+		try:
+			imm = Debugger();
+			thread_id = imm.getThreadId();
+			eip = regs[ "EIP" ];
+			imm.log( "HIT:%x" % thread_id, address = eip );
+		except StandardError as E:
+			imm.log( E.message );
 
 def get_module_base_addr( imm, mod_name ):
 	mod = None;
@@ -91,23 +65,24 @@ def main_impl( imm, mod_name, callmap_file ):
 	diff = get_imagebase_diff( loaded_imagebase, callmap[ "imagebase" ] );
 	
 	# map break points
-	manager = CallStackManager();
-	callHook = CallRetsHook( manager );
-	retHook = CallRetsHook( manager );
+	hook = CallRetHook();
+	imm.log( "Start map" );
 	for ( call_addr, call_asm, ret_addr, ret_asm ) in callmap[ "callrets" ]:
 		call_addr += diff;
+		hook.add_call_point( call_addr, call_asm );
+		imm.log( "mapped call %x" % call_addr );
+		
 		ret_addr += diff;
-		imm.log( repr( call_addr ) );
-		callHook.add( call_asm, call_addr );
-		retHook.add( ret_asm, ret_addr );
-	
+		hook.add_ret_point( ret_addr, ret_asm );
+		imm.log( "mapped ret %x" % ret_addr );
+	imm.log( "Stop" );
 	return "SUCCESS";
 
 def main( args ):
-	if len( args ) != 2:
-		return "Error: Invalid args. !callmap <mod_name> <callmap file>";
-	
 	imm = Debugger();
+	if len( args ) > 2:
+		return "Error: Invalid args. !mapcall <mod_name> <callmap file>";
+	
 	# !mapcall <mod_name> <callmap file>
 	mod_name = args[0].lower();
 	callmap_file = args[1];
