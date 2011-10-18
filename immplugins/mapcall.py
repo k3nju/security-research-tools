@@ -57,24 +57,24 @@ def main_impl( imm, mod_name, callmap_file ):
 	try:
 		with open( callmap_file ) as fd:
 			callmap = json.load( fd );
-			src_imagebage = callmap[ "imagebase" ];
-	except Exception as E:
+	except:
 		return "Error: Failed parsing callmap file";
 	
 	# calculate diff between IDA outputs and debugee
+	src_imagebage = callmap[ "imagebase" ];
 	diff = get_imagebase_diff( loaded_imagebase, callmap[ "imagebase" ] );
 	
 	# map break points
 	hook = CallRetHook();
-	imm.log( "Start map" );
-	for ( call_addr, call_asm, ret_addr, ret_asm ) in callmap[ "callrets" ]:
+	import datetime;
+	start = datetime.datetime.now();
+	for ( call_addr, call_asm, ret_addr, ret_asm ) in callmap[ "callrets" ][:5000]:
 		call_addr += diff;
 		hook.add_call_point( call_addr, call_asm );
-		imm.log( "mapped call %x" % call_addr );
-		
 		ret_addr += diff;
 		hook.add_ret_point( ret_addr, ret_asm );
-		imm.log( "mapped ret %x" % ret_addr );
+	fin = datetime.datetime.now();
+	imm.log( repr( fin - start ) );
 	imm.log( "Stop" );
 	return "SUCCESS";
 
