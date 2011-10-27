@@ -12,6 +12,15 @@ def split_line( line ):
 	line = re.sub( "\..*text:", "", line );
 	return [ i for i in line.split( " " ) if len( i ) > 0 ];
 
+def get_module_name( fd ):
+	while True:
+		line = fd.readline();
+		if len( line ) == 0:
+			return None;
+		if line.find( "File Name" ) == -1:
+			continue;
+		items = split_line( line );
+		return items[-1].split( "\\" )[-1];
 
 def get_imagebase( fd ):
 	while True:
@@ -58,6 +67,7 @@ def error( msg ):
 	sys.stderr.write( msg + "\n" );
 	sys.exit( -1 );
 
+KEY_MOD_NAME = "module_name";
 KEY_IMAGEBASE = "imagebase";
 KEY_CALLRETS = "callrets";
 
@@ -70,6 +80,10 @@ if __name__ == "__main__":
 	is_libcall_only = "-L" in sys.argv;
 	
 	with open( sys.argv[1] ) as fd:
+		mod_name = get_module_name( fd );
+		if mod_name == None:
+			error( "Module name not found" );
+		
 		imagebase = get_imagebase( fd );
 		if imagebase == -1:
 			error( "Imagebase not found" );
@@ -78,6 +92,7 @@ if __name__ == "__main__":
 		if len( callret_pairs ) == 0:
 			error( "Callret pairs parse failed" );
 
+		output[ KEY_MOD_NAME ] = mod_name;
 		output[ KEY_IMAGEBASE ] = imagebase
 		output[ KEY_CALLRETS ] = callret_pairs;
 
