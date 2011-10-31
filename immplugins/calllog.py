@@ -29,9 +29,8 @@ class CallHook( LogBpHook ):
 
 def main( args ):
 	imm = Debugger();
-	hook_name = args[0];
-	addr = int( args[1], 16 );
-	callmap_file = args[2];
+	addr = int( args[0], 16 );
+	callmap_file = args[1];
 	
 	try:
 		with open( callmap_file ) as fd:
@@ -45,7 +44,7 @@ def main( args ):
 		return "Error: Module not found";
 	
 	hooker = CallHook();
-	hooker.add( hook_name, addr );
+	hooker.add( "callog hook", addr );
 	call_points = {};
 	diff = idautils.get_imagebase_diff( loaded_imagebase, CALLMAP[ "imagebase" ] );
 	for call_addr, call_asm, ret_addr, ret_asm in CALLMAP[ "callrets" ]:
