@@ -2,6 +2,7 @@ import sys;
 from winappdbg import *;
 import utils;
 import traceback;
+a
 
 class ReadFileHook( EventHandler ):
 	apiHooks = {
@@ -10,7 +11,12 @@ class ReadFileHook( EventHandler ):
 			],
 		};
 	
-	def pre_ReadFile( self, event, ra, *args ):
+	def pre_ReadFile( self, event, ra,
+					  hFile,
+					  lpBuffer,
+					  nNumberOfBytesToRead,
+					  lpNumberOfBytesRead,
+					  lpOverlapped ):
 		trace = event.get_thread().get_stack_trace_with_labels();
 		print( "-------------------------------------" );
 		for i in trace:
