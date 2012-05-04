@@ -59,7 +59,7 @@ def get_callret_pairs( fd, libcall_only ):
 		ret_addr = int( items[0], 16 );
 		ret_asm = " ".join( items[1:] );
 		
-		callret_pairs.append( ( call_addr, call_asm, ret_addr, ret_asm ) );
+		callret_pairs.append( ( call_addr, call_asm, ret_addr ) );
 	return callret_pairs;
 
 
@@ -73,13 +73,13 @@ KEY_CALLRETS = "callrets";
 
 if __name__ == "__main__":
 	if len( sys.argv ) < 2:
-		print "$ gencalllist.py <source.lst> [-L (library call only)] ";
+		print( "$ gencalllist.py <source.lst> [-L (library call only)] " );
 		sys.exit( -1 );
 
 	output = {};
 	is_libcall_only = "-L" in sys.argv;
 	
-	with open( sys.argv[1] ) as fd:
+	with open( sys.argv[1], "rb" ) as fd:
 		mod_name = get_module_name( fd );
 		if mod_name == None:
 			error( "Module name not found" );
@@ -95,5 +95,5 @@ if __name__ == "__main__":
 		output[ KEY_MOD_NAME ] = mod_name;
 		output[ KEY_IMAGEBASE ] = imagebase
 		output[ KEY_CALLRETS ] = callret_pairs;
-
-	print json.dumps( output );
+		
+	print( json.dumps( output ) );
