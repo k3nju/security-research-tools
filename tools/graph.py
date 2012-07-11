@@ -4,18 +4,22 @@ import os;
 import sys;
 
 def read_stack( f ):
-	recs = [ i.strip().split()[-1].decode( "utf-8" )
+	recs = [ i.strip().decode( "utf-8" )
 			 for i in open( f, "rb" ).readlines() if len( i.strip() ) >0 ];
 	retval = [];
-	for i in recs:
+	for i in reversed( recs ):
 		parts = i.split();
-		l = parts[-1].replace( "0x", "" );
-		if l.startswith( "0x" ):
-			l = l.replace( "0x", "" );
-		elif l.startswith( "(" ):
-			l = l[1:-1].split( "+", 2 )[0];
+		last = parts[-1];
 		
-		retval.append( '"{0}"'.format( l ) );
+		pos = None;
+		if last.startswith( "(" ):
+			pos = last[1:-1];
+		elif last.startswith( "0x" ):
+			pos = last;
+		else:
+			continue;
+		
+		retval.append( '"{0}"'.format( pos ) );
 
 	return retval;
 
@@ -35,7 +39,7 @@ def main( d ):
 			prev = addr;
 
 	print( "digraph callstack {" );
-	for c in reversed( stacks ):
+	for c in stacks:
 		print( "{0} -> {1};".format( *c ) );
 	print( "}" );
 
