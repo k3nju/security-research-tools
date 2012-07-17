@@ -23,9 +23,8 @@ def read_stack( f ):
 
 	return retval;
 
-stacks = [];
-
 def main( d ):
+	stacks = [];
 	for i in os.listdir( d ):
 		if i.endswith( "txt" ) == False:
 			continue;

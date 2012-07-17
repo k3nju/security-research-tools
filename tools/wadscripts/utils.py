@@ -8,3 +8,9 @@ def find_proc( debug, name ):
 		if filename.lower().endswith( name ):
 			return proc;
 	return None;
+
+def get_diff( runtime_addr, static_addr ):
+	if static_addr >= runtime_addr:
+		diff = static_addr - runtime_addr;
+		return diff * -1;
+	return runtime_addr - static_addr;
