@@ -1,10 +1,16 @@
 #! /usr/bin/python
+# -*- coding:utf-8 -*-
 
 import sys;
 import re;
 import json;
 
-OUTPUT = {};
+KEY_MOD_NAME  = "module_name";
+KEY_IMAGEBASE = "imagebase";
+KEY_PROCS     = "procs";
+KEY_CALLRETS  = "callrets";
+
+RE_PROC = re.compile( b"call ([^ ]+)" );
 
 def split_line( line ):
 	line = line.translate( None, b"\n\r" );
@@ -46,7 +52,7 @@ def get_procs_and_callrets( fd, libcall_only ):
 			items = split_line( line );
 			proc_addr = int( items[0], 16 );
 			proc_name = items[1];
-			procs.append( proc_name.decode() );
+			procs.append( ( proc_addr, proc_name.decode() ) );
 			
 		# find call and ret point
 		elif line.find( b"call" ) != -1:
@@ -64,6 +70,7 @@ def get_procs_and_callrets( fd, libcall_only ):
 			# call point
 			call_addr = int( items[0], 16 );
 			call_asm = b" ".join( items[1:] );
+			call_proc = RE_PROC.search( call_asm ).group( 1 ).decode();
 			
 			# ret porint
 			line = fd.readline().strip();
@@ -71,10 +78,9 @@ def get_procs_and_callrets( fd, libcall_only ):
 				break;
 			items = split_line( line );
 			ret_addr = int( items[0], 16 );
-			#ret_asm = b" ".join( items[1:] );
 			
 			callrets.append( ( call_addr,
-							   call_asm.decode(),
+							   call_proc,
 							   ret_addr ) );
 	
 	return ( procs, callrets );
@@ -82,11 +88,6 @@ def get_procs_and_callrets( fd, libcall_only ):
 def error( msg ):
 	sys.stderr.write( msg + "\n" );
 	sys.exit( -1 );
-
-KEY_MOD_NAME  = "module_name";
-KEY_IMAGEBASE = "imagebase";
-KEY_PROCS     = "procs";
-KEY_CALLRETS  = "callrets";
 
 if __name__ == "__main__":
 	if len( sys.argv ) < 2:
