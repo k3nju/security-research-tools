@@ -12,10 +12,13 @@ KEY_CALLRETS  = "callrets";
 
 RE_PROC = re.compile( b"call ([^ ]+)" );
 
+
 def split_line( line ):
-	line = line.translate( None, b"\n\r" );
+	"""
+	b'.ktext:10001016\t\t\tcall\ttjsvda_14' -> [ "10001016", "call", "tjsvda_14" ]
+	"""
 	line = line.replace( b"\t", b" " );
-	line = re.sub( b"\..*text:", b"", line );
+	line = re.sub( b"^\..{0,1}text:", b"", line );
 	return [ i for i in line.split( b" " ) if len( i ) > 0 ];
 
 def get_module_name( fd ):
@@ -41,23 +44,32 @@ def get_imagebase( fd ):
 def get_procs_and_callrets( fd, libcall_only ):
 	procs = [];
 	callrets = [];
+	proc_name = None;
+	proc_start = 0;
 	
 	while True:
 		line = fd.readline().strip();
 		if len( line ) == 0:
 			break;
 		
-		# find procedure
-		if line.endswith( b"proc near" ):
+		# find procedure start
+		if line.find( b"proc near" ) != -1:
 			items = split_line( line );
-			proc_addr = int( items[0], 16 );
+			proc_start = int( items[0], 16 );
 			proc_name = items[1];
-			procs.append( ( proc_addr, proc_name.decode() ) );
+
+		# find procedure end
+		elif line.endswith( b"endp" ):
+			items = split_line( line );
+			proc_end = int( items[0], 16 );
+			procs.append( ( proc_start,
+							proc_end,
+							proc_name.decode() ) );
 			
 		# find call and ret point
 		elif line.find( b"call" ) != -1:
 			items = split_line( line );
-
+			
 			# validations
 			if len( items ) < 3:
 				sys.stderr.write( b"Unkonwn call:%s\n" % line );
