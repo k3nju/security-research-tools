@@ -15,7 +15,7 @@ RE_PROC = re.compile( b"call ([^ ]+)" );
 
 def split_line( line ):
 	"""
-	b'.ktext:10001016\t\t\tcall\ttjsvda_14' -> [ "10001016", "call", "tjsvda_14" ]
+	b'.itext:10001016\t\t\tcall\func' -> [ "10001016", "call", "func" ]
 	"""
 	line = line.replace( b"\t", b" " );
 	line = re.sub( b"^\..{0,1}text:", b"", line );
@@ -29,7 +29,7 @@ def get_module_name( fd ):
 		if line.find( b"File Name" ) == -1:
 			continue;
 		items = split_line( line );
-		return items[-1].split( b"\\" )[-1].decode();
+		return items[-1].split( b"\\" )[-1].decode().lower();
 
 def get_imagebase( fd ):
 	while True:
@@ -56,7 +56,7 @@ def get_procs_and_callrets( fd, libcall_only ):
 		if line.find( b"proc near" ) != -1:
 			items = split_line( line );
 			proc_start = int( items[0], 16 );
-			proc_name = items[1];
+			proc_name = items[1].lower();
 
 		# find procedure end
 		elif line.endswith( b"endp" ):
