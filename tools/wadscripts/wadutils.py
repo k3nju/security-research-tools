@@ -1,4 +1,3 @@
-
 def find_proc( debug, name ):
 	debug.system.scan_processes();
 	for proc in debug.system.iter_processes():
@@ -9,7 +8,7 @@ def find_proc( debug, name ):
 			return proc;
 	return None;
 
-def get_diff( runtime_addr, static_addr ):
+def get_offset( runtime_addr, static_addr ):
 	if static_addr >= runtime_addr:
 		diff = static_addr - runtime_addr;
 		return diff * -1;
