@@ -48,7 +48,7 @@ def get_procs_and_callrets( fd, libcall_only ):
 	proc_start = 0;
 	
 	while True:
-		line = fd.readline().strip();
+		line = fd.readline().strip().replace( b"\t", b" " );
 		if len( line ) == 0:
 			break;
 		

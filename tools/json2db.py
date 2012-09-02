@@ -4,8 +4,9 @@
 import sys;
 import sqlite3;
 import json;
+import traceback;
 
-SCHEMA = open( "./cm_schema.sql", "rb" ).read();
+SCHEMA = open( "./cm_schema.sql", "rb" ).read().decode();
 
 def init_db( db_file ):
 	try:
@@ -13,7 +14,7 @@ def init_db( db_file ):
 			for stmt in SCHEMA.split( ";" ):
 				conn.execute( stmt );
 	except:
-		pass;
+		traceback.print_exc();
 
 def get_cur_and_dst( conn, mod_id, call_src, call_dst ):
 	cursor = conn.cursor();
@@ -73,6 +74,9 @@ def conv_to_sqlite3( db_file, callmap ):
 		
 
 if __name__ == "__main__":
+	if len( sys.argv ) != 3:
+		print
+	
 	callmap_file = sys.argv[1];
 	db_file = sys.argv[2];
 	init_db( db_file );

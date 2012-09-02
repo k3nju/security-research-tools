@@ -35,5 +35,13 @@ set
   call = call + ?,
   ret = ret + ?
 where
-  mod_id = ?
+  proc_id = ?
+""";
+
+SELECT_PROCS_BY_MOD_ID = """
+select * from procs where mod_id = ?
+""";
+
+SELECT_PROCS_BY_RET_ADDR = """
+select * from procs where ret = ?
 """;
