@@ -20,6 +20,11 @@ class CallMapDB( object ):
 		self.__tmp_db_file = os.path.join( tempfile.gettempdir(), "tmp_cm.cb" );
 		shutil.copyfile( db_file, self.__tmp_db_file );
 		self.__conn = sqlite3.connect( self.__tmp_db_file );
+	
+	@property
+	def tmp_db_file( self ):
+		return self.__tmp_db_file;
+	
 
 	def __fetchall( self, sql, params ):
 		cur = self.__conn.cursor();
@@ -32,7 +37,7 @@ class CallMapDB( object ):
 		return cur.fetchone();
 
 	def update_offset( self, mod_name, runtime_base_addr ):
-		mod_rec = self.get_module_by_name( mod_name );
+		mod_rec = self.get_module_by_name( mod_name.lower() );
 		if mod_rec == None:
 			return False;
 		
@@ -45,6 +50,7 @@ class CallMapDB( object ):
 			callmapdb_sql.UPDATE_OFFSET_MODULES_BY_MOD_ID,
 			( offset, mod_id )
 			);
+
 		cur.execute(
 			callmapdb_sql.UPDATE_OFFSET_PROCS_BY_MOD_ID,
 			( offset, offset, mod_id, )
@@ -58,6 +64,8 @@ class CallMapDB( object ):
 				( offset, offset, proc_id )
 				);
 
+		self.__conn.commit();
+		
 		return True;
 		
 	def get_modules( self ):

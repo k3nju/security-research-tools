@@ -39,9 +39,9 @@ where
 """;
 
 SELECT_PROCS_BY_MOD_ID = """
-select * from procs where mod_id = ?
+select * from procs where mod_id = ?;
 """;
 
 SELECT_PROCS_BY_RET_ADDR = """
-select * from procs where ret = ?
+select * from procs where ? between start_addr and end_addr;
 """;
