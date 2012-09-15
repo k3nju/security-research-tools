@@ -75,7 +75,8 @@ def conv_to_sqlite3( db_file, callmap ):
 
 if __name__ == "__main__":
 	if len( sys.argv ) != 3:
-		print
+		print( "$ {0} <callmap_file> <db_file>".format( sys.argv[0] ) );
+		sys.exit( -1 );
 	
 	callmap_file = sys.argv[1];
 	db_file = sys.argv[2];
