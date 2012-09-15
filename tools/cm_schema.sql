@@ -10,7 +10,9 @@ create table if not exists procs (
   ,start_addr integer not null
   ,end_addr   integer not null
   ,name       text    not null
-  ,foreign key( mod_id ) references modules( mod_id ) on delete cascade
+  ,foreign key( mod_id ) references modules( mod_id )
+  		   on delete cascade
+		   on update cascade
 );
 
 create table if not exists callrets (
@@ -19,6 +21,10 @@ create table if not exists callrets (
   ,call        integer not null
   ,ret         integer not null
   ,dst_proc_id integer not null
-  ,foreign key( proc_id ) references procs( proc_id ) on delete cascade
-  ,foreign key( dst_proc_id ) references procs( proc_id ) on delete cascade
+  ,foreign key( proc_id ) references procs( proc_id )
+  		   on delete cascade
+		   on update cascade
+  ,foreign key( dst_proc_id ) references procs( proc_id )
+  		   on delete cascade
+		   on update cascade
 );
