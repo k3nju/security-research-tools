@@ -81,8 +81,4 @@ class CallMapDB( object ):
 		return self.__fetchall( callmapdb_sql.SELECT_PROCS_BY_RET_ADDR, ( ret_addr, ) );
 
 if __name__ == "__main__":
-	db = CallMapDB( "/home/kj/vmshare/vulnresearch/taro/taro.db" );
-	print( db.get_module_by_name( "TJSVDA.DLL" ) );
-	#print( db.get_modules() );
-	#print( db.get_procs_by_mod_id( 1 ) );
-	#db.update_offset( "tjsvda.dll", 1 );
+	pass
