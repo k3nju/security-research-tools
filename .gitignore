@@ -7,3 +7,4 @@
 no_repo/
 forge/
 wvr
+*localenv.py
