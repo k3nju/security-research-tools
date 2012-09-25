@@ -15,11 +15,19 @@ import callmapdb;
 
 if __name__ == "__main__":
 	if len( sys.argv ) < 3:
-		print( "{0} TRACE_LOG_JSON DB_FILE [JSON]".format( sys.argv[0] ) );
+		print( "{0} TRACE_LOG_JSON DB_FILE [json]".format( sys.argv[0] ) );
 		sys.exit( -1 );
 
 	st_file = sys.argv[1];
 	db_file = sys.argv[2];
+	
+	is_output_json = False;
+	try:
+		if sys.argv[3] == "json":
+			is_output_json = True;
+	except:
+		pass;
+		
 
 	# load stack trace
 	with open( st_file ) as fd:
@@ -57,5 +65,11 @@ if __name__ == "__main__":
 			else:
 				op_stack.append( ( ret_addr, mod_name, "" ) );
 		output.append( op_stack );
-	
-	print( json.dumps( output ) );
+
+	if is_output_json == False:
+		for stack in output:
+			print( "----------------------------------" );
+			for r in stack:
+				print( "{0:08x} {1} {2}".format( r[0], r[1], r[2] ) );
+	else:
+		print( json.dumps( output ) );
