@@ -2,9 +2,11 @@
 .*
 *~
 *.o
-*.a
-*.out
+.*
 *.pyc
 *#
-test/
-data*
+!.gitignore
+no_repo/
+forge/
+wvr
+*localenv.py

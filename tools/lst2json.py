@@ -4,6 +4,7 @@
 import sys;
 import re;
 import json;
+import traceback;
 
 KEY_MOD_NAME  = "module_name";
 KEY_IMAGEBASE = "imagebase";
@@ -21,9 +22,12 @@ def split_line( line ):
 	line = re.sub( b"^\..{0,1}text:", b"", line );
 	return [ i for i in line.split( b" " ) if len( i ) > 0 ];
 
+def tab2sp( line ):
+	return line.strip().replace( b"\t", b" " );
+
 def get_module_name( fd ):
 	while True:
-		line = fd.readline().strip();
+		line = tab2sp( fd.readline() );
 		if len( line ) == 0:
 			return None;
 		if line.find( b"File Name" ) == -1:
@@ -33,7 +37,7 @@ def get_module_name( fd ):
 
 def get_imagebase( fd ):
 	while True:
-		line = fd.readline().strip();
+		line = tab2sp( fd.readline() );
 		if len( line ) == 0:
 			return -1
 		if line.find( b"Imagebase" ) == -1:
@@ -41,60 +45,81 @@ def get_imagebase( fd ):
 		items = split_line( line );
 		return int( items[-1], 16 );
 
-def get_procs_and_callrets( fd, libcall_only ):
-	procs = [];
-	callrets = [];
-	proc_name = None;
-	proc_start = 0;
+def read_proc( fd ):
+	lines = [];
 	
+	# find "proc near"
 	while True:
-		line = fd.readline().strip();
+		line = tab2sp( fd.readline() );
 		if len( line ) == 0:
 			break;
 		
-		# find procedure start
 		if line.find( b"proc near" ) != -1:
-			items = split_line( line );
-			proc_start = int( items[0], 16 );
-			proc_name = items[1].lower();
-
-		# find procedure end
-		elif line.endswith( b"endp" ):
-			items = split_line( line );
-			proc_end = int( items[0], 16 );
-			procs.append( ( proc_start,
-							proc_end,
-							proc_name.decode() ) );
-			
-		# find call and ret point
-		elif line.find( b"call" ) != -1:
-			items = split_line( line );
-			
-			# validations
-			if len( items ) < 3:
-				sys.stderr.write( b"Unkonwn call:%s\n" % line );
-				continue;
-			if items[1] != b"call":
-				continue;
-			if items[2].find( b"ds:" ) == -1 and libcall_only == True:
-				continue;
-
-			# call point
-			call_addr = int( items[0], 16 );
-			call_asm = b" ".join( items[1:] );
-			call_proc = RE_PROC.search( call_asm ).group( 1 ).decode();
-			
-			# ret porint
-			line = fd.readline().strip();
-			if len( line ) == 0:
-				break;
-			items = split_line( line );
-			ret_addr = int( items[0], 16 );
-			
-			callrets.append( ( call_addr,
-							   call_proc,
-							   ret_addr ) );
+			lines.append( line );
+			break;
 	
+	if len( lines ) == 0:
+		return None;
+
+	# find "endp"
+	while True:
+		line = fd.readline();
+		if len( line ) == 0:
+			break;
+
+		lines.append( line );
+		
+		if line.find( b"endp" ) != -1:
+			break;
+	
+	return lines;
+
+def get_procs_and_callrets( fd, libcall_only ):
+	procs = [];
+	callrets = [];
+
+	while True:
+		proc_lines = read_proc( fd );
+		if proc_lines == None:
+			break;
+		
+		# add procs
+
+		# get proc head
+		head  = proc_lines[0];
+		parts = split_line( head );
+		start = int( parts[0], 16 );
+		name  = parts[1] # proc name
+		
+		# get proc tail
+		tail  = proc_lines[-1];
+		parts = split_line( tail );
+		end   = int( parts[0], 16 );
+		
+		procs.append( ( start, end, name.decode() ) );
+		
+		# add callrets
+		for i in range( 0, len( proc_lines ) ):
+			# call point
+			line = proc_lines[i];
+			if line.find( b"call" ) == -1:
+				continue;
+			
+			parts = split_line( line );
+			if parts[2].find( b"ds:" ) == -1 and libcall_only == True:
+				continue;
+			
+			call_addr = int( parts[0], 16 );
+			call_proc = RE_PROC.search( b" ".join( parts[1:] ) ).group( 1 ).decode();
+			
+			# ret point
+			i += 1;
+			line = proc_lines[i];
+			parts = split_line( head );
+			ret_addr = int( parts[0], 16 );
+
+			callrets.append( ( call_addr, call_proc, ret_addr ) );
+
 	return ( procs, callrets );
 
 def error( msg ):
@@ -103,7 +128,7 @@ def error( msg ):
 
 if __name__ == "__main__":
 	if len( sys.argv ) < 2:
-		print( "$ gencalllist.py <source.lst> [-L (library call only)] " );
+		print( "$ {0} <source.lst> [-L (library call only)]".format( sys.argv[0] ) );
 		sys.exit( -1 );
 
 	output = {};
