@@ -115,7 +115,7 @@ def get_procs_and_callrets( fd, libcall_only ):
 			# ret point
 			i += 1;
 			line = proc_lines[i];
-			parts = split_line( head );
+			parts = split_line( line );
 			ret_addr = int( parts[0], 16 );
 
 			callrets.append( ( call_addr, call_proc, ret_addr ) );
