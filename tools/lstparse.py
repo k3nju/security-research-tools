@@ -26,10 +26,25 @@ class ProcSet:
 		for addr in sorted(self.__addrs_names):
 			yield (addr, self.__addrs_names[addr])
 
+	def update_addr_offset(self, offset):
+		# update addrs_names
+		new = {}
+		for addr in self.__addrs_names:
+			new[addr + offset] = self.__addrs_names[addr]
+		self.__addrs_names = new
+
+		# update names_addrs
+		for name in self.__names_addrs:
+			self.__names_addrs[name] += offset
+			
+
 class CallRetSet:
 	def __init__(self):
 		# just implement ret addr mapping.
-		self.__raddrs_map = {}
+		self.__raddrs_map = {
+			# key: raddr
+			# value: (caddr, name)
+		}
 
 	def add(self, caddr, name, raddr):
 		self.__raddrs_map[raddr] = (caddr, name)
@@ -41,7 +56,13 @@ class CallRetSet:
 		# sort by caddr. not raddr
 		for item in sorted(self.__raddrs_map.items(), key=lambda i:i[1][0]):
 			yield (item[1][0], item[1][1], item[0]) # (caddr, "function name", raddr)
-			
+
+	def update_addr_offset(self, offset):
+		new = {}
+		for raddr in self.__raddrs_map:
+			v = self.__raddrs_map[raddr]
+			new[raddr + offset] = (v[0] + offset, v[1])
+		self.__raddrs_map = new
 
 class LstFile:
 	def __init__(self, filename):
@@ -140,20 +161,28 @@ class LstFile:
 			# -3/0 : "section name":"address"
 			unused, addr = parts[0].split(b":", 2)
 			self.__call_parts = (addr, parts[-1]) # (addr, "function name")
-			
+
+
+	def update_base_addr(self, addr):
+		offset = addr - self.imagebase
+		self.__imagebase = offset
+		self.__proc_set.update_addr_offset(offset)
+		self.__callret_set.update_addr_offset(offset)
 
 	def dump_procs(self):
 		for i in self.proc_set:
-			print(i)
+			print("{0:08x} {1}".format(*i))
 			
 	def dump_callrets(self):
 		callrets = self.callret_set
 		for i in callrets:
-			print(i)
+			print("{0:08x} {1} {2:08x}".format(*i))
 		
 
 if __name__ == "__main__":
 	lf = LstFile("/tmp/some.lst")
 	lf.parse()
+	lf.update_base_addr(0x01000000)
 	lf.dump_procs()
 	lf.dump_callrets()
+	
