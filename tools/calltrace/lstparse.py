@@ -2,6 +2,10 @@
 # -*- coding:utf-8 -*-
 
 import os
+import re
+
+RE_PROC_NEAR = re.compile(b"([^\s])+\s+proc\s+near");
+
 
 def parse_parts(line):
 	return line.strip().replace(b"\t", b" ").split(b" ")
@@ -121,13 +125,7 @@ class LstFile:
 
 	def __find_proc(self, line):
 		# .text:100013B2	hogehoge_111 proc	near
-		parts = parse_parts(line)
-		# -1 : near
-		# -2 : proc
-		# -3 : "function name"
-		# -4 : "section name":"address"
-		if line.find(b"proc near") == -1 or (parts[-2], parts[-1]) != (b"proc", b"near"):
-			return
+		match = RE_PROC_NEAR.search(
 		
 		unused, addr = parts[-4].split(b":", 2)
 		self.__proc_set.add(int(addr, 16), parts[-3]) # (addr, "function name")
