@@ -3,12 +3,13 @@
 
 import os
 import re
+import traceback
 
-RE_PROC_NEAR = re.compile(b"([^\s])+\s+proc\s+near");
+RE_TRIPLE_NUMBERS = re.compile(b"\d{3}")
 
 
 def parse_parts(line):
-	return line.strip().replace(b"\t", b" ").split(b" ")
+	return [i for i in line.strip().replace(b"\t", b" ").split(b" ") if len(i) > 0]
 
 class ProcSet:
 	def __init__(self):
@@ -104,9 +105,9 @@ class LstFile:
 			for handler in self.__handlers:
 				try:
 					handler(line)
-				except:
-					pass
-
+				except Exception as E:
+					traceback.print_exc()
+					
 	def __find_module_name(self, line):
 		# .text:10001000	; File Name   :	C:\Program Files\Hoge\Hige.dll
 		if line.find(b"File Name") == -1:
@@ -125,18 +126,28 @@ class LstFile:
 
 	def __find_proc(self, line):
 		# .text:100013B2	hogehoge_111 proc	near
-		match = RE_PROC_NEAR.search(
+		if line.find(b"proc near") == -1:
+			return
 		
-		unused, addr = parts[-4].split(b":", 2)
+		parts = parse_parts(line)
+		unused, addr = parts[0].split(b":", 2)
 		self.__proc_set.add(int(addr, 16), parts[-3]) # (addr, "function name")
 
 	def __find_callret(self, line):
 		parts = parse_parts(line)
+		# remove stack position if it exists.
+		# ex. .text:10000000 012 call hoge -> .text:10000000 call hoge
+		#                    ^^^remove this
+		
+		#  ['.text:10000000', '012', 'call', 'hoge']
+		if len(parts) >= 2 and RE_TRIPLE_NUMBERS.search(parts[1]):
+			parts.remove(parts[1]);
+		
 		# first, check given line is ret point or not
 		# taking care of cascade calls like below
 		#
-		# .text:10000000  call hoge
-		# .text:10000005  call hige <- this line is ret point from hoge and new call point
+		# .text:10000000 call hoge
+		# .text:10000005 call hige <- this line is ret point from hoge and new call point
 		if self.__call_parts != None:
 			# __call_parts != None means that given line is return points
 			#  from previous call
@@ -151,14 +162,15 @@ class LstFile:
 				)
 
 			self.__call_parts = None
-			
-		if line.find(b"call") != -1 and parts[-2] == b"call":
+
+		#  ['.text:10000000', 'call', 'hoge']
+		if line.find(b"call") != -1 and parts[1] == b"call":
 			# .text:10001234	call	hogehoge_111
 			# -1 : "function name"
 			# -2 : call
 			# -3/0 : "section name":"address"
 			unused, addr = parts[0].split(b":", 2)
-			self.__call_parts = (addr, parts[-1]) # (addr, "function name")
+			self.__call_parts = (addr, parts[2]) # (addr, "function name")
 
 
 	def update_base_addr(self, addr):
@@ -181,6 +193,8 @@ if __name__ == "__main__":
 	lf = LstFile("/tmp/some.lst")
 	lf.parse()
 	lf.update_base_addr(0x01000000)
-	lf.dump_procs()
+	print(lf.module_name)
+	print(lf.imagebase)
+	#lf.dump_procs()
 	lf.dump_callrets()
 	
