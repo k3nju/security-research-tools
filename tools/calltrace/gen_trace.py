@@ -86,15 +86,9 @@ if __name__ == "__main__":
 		base_addr = call_stack_set.get_base_addr_by_module_name(name)
 		if base_addr == None:
 			continue;
+		
 		lstfile.update_base_addr(base_addr)
-
 		lstfile_map[name] = lstfile;
-
-		print( lstfile.callret_set);
-		for _, _, i in lstfile.callret_set:
-			print(hex(i))
-
-	raise Exception("hoge")
 
 	# render call stack for each
 	for callstack in call_stack_set.get_callstacks():
@@ -102,17 +96,18 @@ if __name__ == "__main__":
 		print("==========================================");
 		for mod_name, _unused, ret_addr in callstack:
 			if mod_name not in lstfile_map:
-				continue;
+				print("Unknown_{0}_ret_{1:08x}".format(mod_name, ret_addr));
+			else:
+				# find lstfile by corresponding module name
+				lstfile = lstfile_map[mod_name]
+				e = lstfile.callret_set.find_by_ret_addr(ret_addr)
+				if e == None:
+					print("NotFound_{0}_ret_{1:08x}".format(mod_name, ret_addr));
+					continue
+			
+				call_addr, func_name = e
+				print("{0}.{1}".format(mod_name, func_name));
+			
 
-			# find lstfile by corresponding module name
-			lstfile = lstfile_map[mod_name]
-			e = lstfile.callret_set.find_by_ret_addr(ret_addr)
-			if e == None:
-				continue
-			
-			call_addr, func_name = e
-			print("{0}.{1}".format(mod_name, func_name));
-			
-				
 				
 	

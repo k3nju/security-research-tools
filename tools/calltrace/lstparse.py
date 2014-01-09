@@ -5,7 +5,7 @@ import os
 import re
 import traceback
 
-RE_TRIPLE_NUMBERS = re.compile(b"\d{3}")
+RE_STACK_DEPTH = re.compile(b"(\d|[A-F]){3}")
 
 
 def parse_parts(line):
@@ -140,8 +140,12 @@ class LstFile:
 		#                    ^^^remove this
 		
 		#  ['.text:10000000', '012', 'call', 'hoge']
-		if len(parts) >= 2 and RE_TRIPLE_NUMBERS.search(parts[1]):
+		if len(parts) >= 2 and RE_STACK_DEPTH.search(parts[1]):
 			parts.remove(parts[1]);
+
+		# skip empty line
+		if len(parts) <= 1:
+			return
 		
 		# first, check given line is ret point or not
 		# taking care of cascade calls like below
@@ -155,6 +159,7 @@ class LstFile:
 			# .text:1000123A	mov	esi, eax
 			# 0 : "section name":"address"
 			unused, addr = parts[0].split(b":", 2)
+			
 			self.__callret_set.add(
 				int(self.__call_parts[0], 16), # call addr
 				self.__call_parts[1], # dst function name
@@ -172,10 +177,9 @@ class LstFile:
 			unused, addr = parts[0].split(b":", 2)
 			self.__call_parts = (addr, parts[2]) # (addr, "function name")
 
-
 	def update_base_addr(self, addr):
 		offset = addr - self.imagebase
-		self.__imagebase = offset
+		self.__imagebase += offset
 		self.__proc_set.update_addr_offset(offset)
 		self.__callret_set.update_addr_offset(offset)
 
@@ -192,7 +196,7 @@ class LstFile:
 if __name__ == "__main__":
 	lf = LstFile("/tmp/some.lst")
 	lf.parse()
-	lf.update_base_addr(0x01000000)
+	#lf.update_base_addr(0x00aa0000);
 	print(lf.module_name)
 	print(lf.imagebase)
 	#lf.dump_procs()
