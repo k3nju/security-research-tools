@@ -170,12 +170,13 @@ class LstFile:
 
 		#  ['.text:10000000', 'call', 'hoge']
 		if line.find(b"call") != -1 and parts[1] == b"call":
-			# .text:10001234	call	hogehoge_111
-			# -1 : "function name"
-			# -2 : call
-			# -3/0 : "section name":"address"
+			# ex1.|.text:10001234	call	hogehoge_111
+			# ex2.|.text:10001234	call	dword ptr [esi+10h] ; comment
+			# 0 : "section name":"address"
+			# 2-: function name
 			unused, addr = parts[0].split(b":", 2)
-			self.__call_parts = (addr, parts[2]) # (addr, "function name")
+			asm = b" ".join(parts[2:]).split(b";")[0];
+			self.__call_parts = (addr, asm) # (addr, "function name")
 
 	def update_base_addr(self, addr):
 		offset = addr - self.imagebase

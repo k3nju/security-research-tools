@@ -39,6 +39,8 @@ class MyEventHandler(EventHandler):
 		proc = event.get_process()
 		st = th.peek_stack_dwords(1024)
 		for v in st:
+			if proc.is_address_executable(v) == False:
+				continue
 			mod = proc.get_module_at_address(v)
 			if mod == None:
 				continue
