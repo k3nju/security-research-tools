@@ -3,16 +3,11 @@
 # Example of aquiring calltrace.
 # 
 
-import sys
 import os
-import traceback
-import threading
-from collections import namedtuple, defaultdict
 import traceback
 import json
 
 from winappdbg import *
-import pefile
 
 # target exe path
 EXE_PATH = "c:\\hoge.exe";

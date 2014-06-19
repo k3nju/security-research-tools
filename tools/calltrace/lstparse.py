@@ -1,11 +1,16 @@
 #! /usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import os
 import re
 import traceback
+from collections import namedtuple
 
 RE_STACK_DEPTH = re.compile(b"(\d|[A-F]){3}")
+RE_PROC_NEAR = re.compile(b"proc\s+near")
+# CallRet defines lines of codes where calling function and returning from it
+CallRet = namedtuple("CallRet", ["caddr", "dst_name", "raddr"])
+# Proc is abstraction of function appeared in disassembly
+Proc = namedtuple("Proc", ["addr", "name"])
 
 
 def parse_parts(line):
@@ -29,7 +34,8 @@ class ProcSet:
 
 	def __iter__(self):
 		for addr in sorted(self.__addrs_names):
-			yield (addr, self.__addrs_names[addr])
+			#yield (addr, self.__addrs_names[addr])
+                        yield Proc(addr, self.__addrs_names[addr])
 
 	def update_addr_offset(self, offset):
 		# update addrs_names
@@ -60,7 +66,8 @@ class CallRetSet:
 	def __iter__(self):
 		# sort by caddr. not raddr
 		for item in sorted(self.__raddrs_map.items(), key=lambda i:i[1][0]):
-			yield (item[1][0], item[1][1], item[0]) # (caddr, "function name", raddr)
+			#yield (item[1][0], item[1][1], item[0]) # (caddr, "function name", raddr)
+                        yield CallRet(item[1][0], item[1][1], item[0])
 
 	def update_addr_offset(self, offset):
 		new = {}
@@ -126,12 +133,12 @@ class LstFile:
 
 	def __find_proc(self, line):
 		# .text:100013B2	hogehoge_111 proc	near
-		if line.find(b"proc near") == -1:
+		if RE_PROC_NEAR.search(line) is None:
 			return
 		
 		parts = parse_parts(line)
 		unused, addr = parts[0].split(b":", 2)
-		self.__proc_set.add(int(addr, 16), parts[-3]) # (addr, "function name")
+		self.__proc_set.add(int(addr, 16), parts[1]) # (addr, "function name")
 
 	def __find_callret(self, line):
 		parts = parse_parts(line)
