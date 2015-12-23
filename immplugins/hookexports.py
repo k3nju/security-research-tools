@@ -12,6 +12,7 @@ class TargetDLL:
         self.filename = os.path.basename(dll.lower())
         if not self.filename.endswith("dll"):
             self.filename = self.filename + ".dll"
+        self.exporteds = []
         self._resolve_exports()
 
     def _resolve_exports(self):
@@ -23,8 +24,7 @@ class TargetDLL:
         path = mod.getPath()
         pe = pefile.PE(path)
         dll_name = os.path.splitext(os.path.basename(path))[0]
-        
-        self.exporteds = []
+
         for e in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             name = "{}.{}".format(dll_name, e.name)
             addr = dbg.getAddress(name)
